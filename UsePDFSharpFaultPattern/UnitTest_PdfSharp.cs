@@ -133,23 +133,63 @@ public class UnitTest_PdfSharp
 
 		await outputDocument.SaveAsync(outputPath);
 	}
+	[Fact]
+	public async Task Test07_MergePdfFileWithFilenameBookmark()
+	{
+		// Test06の処理に追加して、ファイル名のブックマークをつける。
+		// 既存ファイルにブックマークがある場合は、ファイル名のブックマークのサブアイテムとして追加する
+		string baseDirectory = AppContext.BaseDirectory;
+		var srcFile1 = Path.Combine(baseDirectory, "TestData", "Sample32.pdf");
+		var srcFile2 = Path.Combine(baseDirectory, "TestData", "tede-msbuild.pdf");
+		string outputDirectory = Path.Combine(baseDirectory, "Output");
+		string outputPath = Path.Combine(outputDirectory, "PdfSharp_Test07_MergePdfFileWithFilenameBookmark.pdf");
 
-	private static void MergeDocumentWithOutlines(PdfDocument sourceDocument, PdfDocument outputDocument)
+		// 出力ディレクトリの作成
+		Directory.CreateDirectory( outputDirectory );
+
+		using PdfDocument inputDocument1 = PdfReader.Open(srcFile1, PdfDocumentOpenMode.Import);
+		using PdfDocument inputDocument2 = PdfReader.Open(srcFile2, PdfDocumentOpenMode.Import);
+		using PdfDocument outputDocument = new();
+
+		MergeDocumentWithOutlines( inputDocument1, outputDocument, Path.GetFileName(srcFile1) );
+		MergeDocumentWithOutlines( inputDocument2, outputDocument, Path.GetFileName(srcFile2) );
+
+		await outputDocument.SaveAsync( outputPath );
+	}
+
+	private static void MergeDocumentWithOutlines(PdfDocument sourceDocument, PdfDocument outputDocument, string? filename = null )
 	{
 		Dictionary<PdfPage, PdfPage> pageMap = [];
-
+		PdfPage? dstPage = null;
 		for (int pageIndex = 0; pageIndex < sourceDocument.PageCount; pageIndex++)
 		{
 			PdfPage sourcePage = sourceDocument.Pages[pageIndex];
 			PdfPage addedPage = outputDocument.AddPage(sourcePage);
 			pageMap[sourcePage] = addedPage;
+			if( pageIndex == 0 )
+			{
+				dstPage = addedPage;
+			}
 		}
-
-		CopyOutlines(sourceDocument.Outlines, outputDocument.Outlines, pageMap);
+		PdfOutline? parentOutline = null;
+		if( filename != null )
+		{
+			// ファイル名ブックマークを作成する。
+			parentOutline = new PdfOutline()
+			{
+				Title = filename,
+				Opened = true,
+				DestinationPage = dstPage!,
+			};
+			outputDocument.Outlines.Add( parentOutline );
+		}
+		CopyOutlines( sourceDocument.Outlines, outputDocument.Outlines, pageMap, parentOutline );
 	}
 
-	private static void CopyOutlines(PdfOutlineCollection sourceOutlines, PdfOutlineCollection destinationOutlines, IReadOnlyDictionary<PdfPage, PdfPage> pageMap)
+	private static void CopyOutlines(PdfOutlineCollection sourceOutlines, PdfOutlineCollection destinationOutlines, IReadOnlyDictionary<PdfPage, PdfPage> pageMap, PdfOutline? parentOutline )
 	{
+		PdfOutlineCollection targetOutlines = parentOutline?.Outlines ?? destinationOutlines;
+
 		foreach (PdfOutline sourceOutline in sourceOutlines)
 		{
 			PdfPage? destinationPage = null;
@@ -170,14 +210,15 @@ public class UnitTest_PdfSharp
 				Right = sourceOutline.Right,
 				Bottom = sourceOutline.Bottom,
 				Zoom = sourceOutline.Zoom,
-				DestinationPage = destinationPage,
+				DestinationPage = destinationPage!,
 			};
 
-			destinationOutlines.Add(copiedOutline);
+			targetOutlines.Add(copiedOutline);
 
 			if (sourceOutline.Outlines.Count > 0)
 			{
-				CopyOutlines(sourceOutline.Outlines, copiedOutline.Outlines, pageMap);
+				// サブアイテムは変わらない
+				CopyOutlines(sourceOutline.Outlines, copiedOutline.Outlines, pageMap, null );
 			}
 		}
 	}
