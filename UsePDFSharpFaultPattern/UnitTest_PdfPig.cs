@@ -11,9 +11,9 @@ public class UnitTest_PdfPig
 	/// </summary>
 	/// <returns></returns>
 	[Fact]
-	public async Task Test01_ImportImagePageAsync()
+	public void Test01_ImportImagePage()
 	{
-		await ImportPdfAndSaveAsync( "img005.pdf", "PdfPig_Test01_ImportImagePage.pdf" );
+		ImportPdfAndSave( "img005.pdf", "PdfPig_Test01_ImportImagePage.pdf" );
 	}
 
 	/// <summary>
@@ -21,12 +21,12 @@ public class UnitTest_PdfPig
 	/// </summary>
 	/// <returns></returns>
 	[Fact]
-	public async Task Test02_ImportShiftJisPageAsync()
+	public void Test02_ImportShiftJisPage()
 	{
-		await ImportPdfAndSaveAsync( "Sample32.pdf", "PdfPig_Test02_ImportShiftJisPage.pdf" );
+		ImportPdfAndSave( "Sample32.pdf", "PdfPig_Test02_ImportShiftJisPage.pdf" );
 	}
 
-	private static async Task ImportPdfAndSaveAsync( string sourceFileName, string outputFileName )
+	private static void ImportPdfAndSave( string sourceFileName, string outputFileName )
 	{
 		string baseDirectory = AppContext.BaseDirectory;
 		string inputPath = Path.Combine(baseDirectory, "TestData", sourceFileName);
@@ -46,14 +46,14 @@ public class UnitTest_PdfPig
 		}
 		// outputDocument を保存する(バイト配列になるのはなんでなのかね？Streamに直接保存してくれればいいのにねぇ…
 		var bytes = outputDocument.Build();
-		await File.WriteAllBytesAsync( outputPath, bytes, TestContext.Current.CancellationToken );
+		File.WriteAllBytes( outputPath, bytes );
 	}
 	/// <summary>
 	/// S-JIS 保存されている日本語名の非埋め込みフォントを持つPDF に、ブックマークをつけた場合のテスト
 	/// </summary>
 	/// <returns></returns>
 	[Fact]
-	public async Task Test03_AddFilenameBookmarkAsync()
+	public void Test03_AddFilenameBookmark()
 	{
 		string baseDirectory = AppContext.BaseDirectory;
 		string inputPath = Path.Combine(baseDirectory, "TestData", "Sample32.pdf");
@@ -77,7 +77,7 @@ public class UnitTest_PdfPig
 		outputDocument.Bookmarks = new Bookmarks( new List<BookmarkNode> { bookmarkNode } );
 		// outputDocument を保存する
 		var bytes = outputDocument.Build();
-		await File.WriteAllBytesAsync( outputPath, bytes, TestContext.Current.CancellationToken );
+		File.WriteAllBytes( outputPath, bytes );
 	}
 	/// <summary>
 	/// 閲覧パスワード付きのPDFにしおりを追加した場合の動作確認
@@ -108,5 +108,9 @@ public class UnitTest_PdfPig
 
 		Directory.CreateDirectory( outputDirectory );
 		throw new NotImplementedException();
+	}
+	[Fact]
+	public void Test06_MergePdfFile()
+	{
 	}
 }

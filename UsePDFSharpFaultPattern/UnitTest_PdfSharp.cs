@@ -1,10 +1,21 @@
 ﻿using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
+using System.Diagnostics;
+using System.Text;
 
 namespace UsePDFSharpFaultPattern;
 
 public class UnitTest_PdfSharp
 {
+	public UnitTest_PdfSharp()
+	{
+#if NET
+		// Register CodePagesEncodingProvider so that legacy encodings like Shift-JIS (CP932),
+		// GBK (CP936), Big5 (CP950), EUC-KR (CP949), etc. are available on all platforms.
+		// On .NET Framework, all code pages are natively available and registration is not needed.
+		Encoding.RegisterProvider( CodePagesEncodingProvider.Instance );
+#endif
+	}
 	/// <summary>
 	/// 画像だけのPDFをインポートした場合のテスト(問題なくインポートできている)
 	/// </summary>
@@ -22,6 +33,9 @@ public class UnitTest_PdfSharp
 	[Fact]
 	public async Task Test02_ImportShiftJisPageAsync()
 	{
+#if NETFRAMEWORK
+		Debug.WriteLine( "executing .NET Framework" );
+#endif
 		await ImportPdfAndSaveAsync( "Sample32.pdf", "PdfSharp_Test02_ImportShiftJisPage.pdf" );
 	}
 
@@ -78,13 +92,9 @@ public class UnitTest_PdfSharp
 
 		Directory.CreateDirectory( outputDirectory );
 		// PDFを開いて、ブックマークを追加して保存
-		using var document = PdfReader.Open(inputPath, PdfDocumentOpenMode.Modify, ( arg ) =>
-		{
-			arg.Password = "0000";
-			arg.Abort = false;
-		} );
+		using var document = PdfReader.Open( inputPath, "0000", PdfDocumentOpenMode.Modify );
 		// 最初のページにブックマークを追加する
-		document.Outlines.Add("1_閲覧PW付き_PW=0000.pdf", document.Pages[0]);
+		document.Outlines.Add("1_閲覧PW付き_PW=0000", document.Pages[0]);
 		await document.SaveAsync( outputPath );
 	}
 	/// <summary>
@@ -101,13 +111,9 @@ public class UnitTest_PdfSharp
 
 		Directory.CreateDirectory( outputDirectory );
 		// PDFを開いて、ブックマークを追加して保存
-		using var document = PdfReader.Open(inputPath, PdfDocumentOpenMode.Modify, ( arg ) =>
-		{
-			arg.Password = "0000";
-			arg.Abort = false;
-		} );
+		using var document = PdfReader.Open( inputPath, "0000", PdfDocumentOpenMode.Modify );
 		// 最初のページにブックマークを追加する
-		document.Outlines.Add( "2_編集PW付き_PW=0000.pdf", document.Pages[0] );
+		document.Outlines.Add( "2_編集PW付き_PW=0000", document.Pages[0] );
 		await document.SaveAsync( outputPath );
 	}
 	[Fact]
